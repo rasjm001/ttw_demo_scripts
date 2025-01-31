@@ -6,6 +6,10 @@ namespace Akila.FPSFramework
  [AddComponentMenu("Akila/FPS Framework/Player/Radio")]
     public class Radio : MonoBehaviour, IInteractable
     {
+
+        public FirstPersonController fpsController;
+
+
         [Tooltip("The name of the interaction to display (e.g., 'Open Map')")]
         public string interactionName = "Open Map";
 
@@ -37,6 +41,7 @@ namespace Akila.FPSFramework
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
             Debug.Log("Map GUI closed.");
+            CloseUI();
         }
         else
         {
@@ -44,6 +49,7 @@ namespace Akila.FPSFramework
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             Debug.Log("Map GUI opened.");
+            OpenUI();
         }
     }
     else
@@ -77,7 +83,29 @@ private void OnTriggerExit(Collider other)
         {
             mapCanvas.SetActive(false);
             Debug.Log("Map GUI closed because player moved away.");
+            CloseUI();
         }
     }
     }
+
+    public void OpenUI()
+{
+    fpsController.isUIOpen = true;
+    Cursor.lockState = CursorLockMode.None; // Unlock cursor for UI interaction
+    Cursor.visible = true;
+}
+
+public void CloseUI()
+{
+    fpsController.isUIOpen = false;
+    Cursor.lockState = CursorLockMode.Locked; // Lock cursor back for gameplay
+    Cursor.visible = false;
+}
+
+public void test_button()
+{
+    Debug.Log("button has been pressed here");
+    mapCanvas.SetActive(false);
+    CloseUI();
+}
 }}
