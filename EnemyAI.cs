@@ -5,15 +5,19 @@ using UnityEngine.AI;
 
 public class EnemyAI : MonoBehaviour
 {
-    public Transform player; // Reference to player position
-    public Transform[] coverPoints; // Array of cover points
-    public float shootingRange = 20f; // Distance to start shooting
-    public float attackRange = 10f; // Distance to move towards player
-    public float movementSpeed = 5f; // AI movement speed
-    public float shootingDelay = 1f; // Time between shots
-    public GameObject bulletPrefab; // Bullet prefab
-    public Transform firePoint; // Where bullets spawn
-    public float bulletSpeed = 25f; // Bullet travel speed
+    public enum AIState { Defending, Pushing }
+    public AIState currentState = AIState.Defending;
+
+    public Transform player;
+    public Transform[] coverPoints;
+    public float shootingRange = 20f;
+    public float attackRange = 10f;
+    public float movementSpeed = 5f;
+    public float shootingDelay = 1f;
+    public GameObject bulletPrefab;
+    public Transform firePoint;
+    public float bulletSpeed = 25f;
+    public float health = 10f;
 
     private NavMeshAgent agent;
     private float timeToShoot;
@@ -27,6 +31,32 @@ public class EnemyAI : MonoBehaviour
     }
 
     private void Update()
+    {
+        switch (currentState)
+        {
+            case AIState.Defending:
+                DefendPosition();
+                break;
+
+            case AIState.Pushing:
+                PushTowardsPlayer();
+                break;
+        }
+    }
+
+    // ---------------- DEFENDING STATE ----------------
+    private void DefendPosition()
+    {
+        float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+        
+        if (distanceToPlayer <= shootingRange)
+        {
+            ShootAtPlayer();
+        }
+    }
+
+    // ---------------- PUSHING STATE ----------------
+    private void PushTowardsPlayer()
     {
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
@@ -56,7 +86,6 @@ public class EnemyAI : MonoBehaviour
     {
         if (timeToShoot <= 0)
         {
-            // Create bullet and shoot toward the player
             GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
             Rigidbody rb = bullet.GetComponent<Rigidbody>();
 
@@ -100,11 +129,17 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    private System.Collections.IEnumerator WaitAndMove()
+    private IEnumerator WaitAndMove()
     {
         yield return new WaitForSeconds(2f);
         isInCover = false;
         currentCoverIndex = (currentCoverIndex + 1) % coverPoints.Length;
         SeekCover();
+    }
+
+    // ---------------- TOGGLE STATES ----------------
+    public void SetState(AIState newState)
+    {
+        currentState = newState;
     }
 }

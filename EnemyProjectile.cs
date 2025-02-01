@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Akila.FPSFramework; // Add this to access the HealthSystem class
+using Akila.FPSFramework;
 
 public class EnemyProjectile : MonoBehaviour
 {
@@ -13,17 +13,21 @@ public class EnemyProjectile : MonoBehaviour
 
     private Vector3 shootDirection;
 
-    private void Start()
+    public void Initialize(Vector3 targetPosition)
     {
-        // Apply accuracy by randomly modifying the direction slightly
-        shootDirection = transform.forward + new Vector3(
-            Random.Range(-accuracy, accuracy), 
-            Random.Range(-accuracy, accuracy), 
+        // Calculate direction toward the target
+        shootDirection = (targetPosition - transform.position).normalized;
+
+        // Apply inaccuracy (random offset)
+        shootDirection += new Vector3(
+            Random.Range(-accuracy, accuracy),
+            Random.Range(-accuracy, accuracy),
             Random.Range(-accuracy, accuracy)
         );
 
-        shootDirection.Normalize(); // Normalize to keep consistent speed
-        Destroy(gameObject, lifetime);
+        shootDirection.Normalize(); // Ensure consistent speed
+
+        Destroy(gameObject, lifetime); // Destroy after set lifetime
     }
 
     private void Update()
@@ -31,25 +35,4 @@ public class EnemyProjectile : MonoBehaviour
         transform.position += shootDirection * speed * Time.deltaTime;
     }
 
-    private void OnTriggerEnter(Collider other)
-    {
-        // Check if we hit a valid target
-        if (other.CompareTag("Player") || other.CompareTag("Ally"))
-        {
-            Debug.Log("Projectile has hit player");
-            HealthSystem healthSystem = other.GetComponent<HealthSystem>();
-
-            if (healthSystem != null)
-            {
-                healthSystem.Damage(damage, null); // 'null' since there's no specific attacker
-                Debug.Log($"Enemy projectile hit {other.name}, dealing {damage} damage.");
-            }
-
-            Destroy(gameObject);
-        }
-        else if (other.CompareTag("Obstacle") || other.CompareTag("Cover"))
-        {
-            Destroy(gameObject); // Destroy if it hits walls or cover
-        }
-    }
-}
+    private void OnTriggerE
