@@ -1,46 +1,134 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Akila.FPSFramework; 
 
 public class GameManager : MonoBehaviour
 {
-    //handles the logic for the gameplay in each scene including the win conditions etc.
+    [Header("Trench Capacity")]
+    public int teamA_trench_max_capacity = 20; // Max bots in player trench
+    public int teamB_trench_max_capacity = 20; // Max bots in enemy trench
 
-    public GameObject[] bots; // array that will hold gameobject or prefabs of the bots to be used for the Eteam- 
-    public float teamA_trench_max_capacity= 20f; // maximun number of bots that can be in player trench at one time ( upgradable)
-    public float teamB_trench_max_capacity= 20f; // maximun number of bots that can be in enemy trench at one time ( can increase with game play)
-    public float timer; // timer to clear level- may or may not be used depending on gametype
-    public int number_of_starting_bots; // number of bots to start in the enemy trench
-    public GameObject[] enemy_spawn_locations; // transforms of where enemies can spawn ( with random range either side)
-    public float enemy_bot_spawn_rate; //  rate at which enemy infantry spawn in enemy trench (outside of those used in pushes)
-    public float allied_soldier_spawn_rate; //  rate at which  infantry spawn in player trench (upgradable)
+    [Header("Bot Tracking")]
+    public int teamA_bot_counter = 0; // Bots in player trench
+    public int teamB_bot_counter = 0; // Bots in enemy trench
 
-    public int push_counter = 1; // counts the number of enemy push which have occured
-    public float push_timer; //timer which counts down the time between pushes
+    [Header("Spawning Settings")]
+    public int number_of_starting_bots = 10; // Initial enemy bots in trench
+    public GameObject[] enemy_spawn_locations; // Possible spawn locations
+    public GameObject[] bots; // Prefabs of enemy bot types
+    public float enemy_bot_spawn_rate = 10f; // Time between spawns in enemy trench
+    public float allied_soldier_spawn_rate = 15f; // Time between spawns in player trench
 
-    //add another array or list here that will be the same length as the bots array- this is the multiplier for the units used in each push for example [5,2,2][bot1,bot2,bot3] would be used to spawn 5 bot1s, and 
-    //2 bot2s and bot3s. 
+    [Header("Push Mechanics")]
+    public int push_counter = 1; // Number of enemy pushes
+    public float push_timer = 10f; // Time between pushes
+    private float push_timer_reset; // Store initial push timer value
 
-  
+    [Header("Push Scaling")]
+    public int[] push_unit_multipliers; // Scaling for push wave size
 
+    [Header("Game Timer")]
+    public float timer = 300f; // Timer to clear level
 
-    // Start is called before the first frame update
     void Start()
     {
-        //spawn enemy bots in the enemy trench (at the spawn locations) - accroding the the number of startings bots variable
+        push_timer_reset = push_timer; // Store original push time
 
-        //start the push counter
+        // Initialize push multipliers (default: 1 per bot type)
+        push_unit_multipliers = new int[bots.Length];
+        for (int i = 0; i < push_unit_multipliers.Length; i++)
+        {
+            push_unit_multipliers[i] = 1; // Start at 1 for each unit type
+        }
+
+        // Spawn initial bots in enemy trench
+        for (int i = 0; i < number_of_starting_bots; i++)
+        {
+            SpawnEnemyBot();
+        }
+
+        StartCoroutine(SpawnReinforcements());
     }
 
-    // Update is called once per frame
     void Update()
     {
-        //spawn infantry in the enemy and player trenches according to the spawn rate at each trench ( units per 10 sec etc) provided the max capacity has not been reached
+        // Countdown for the push system
+        push_timer -= Time.deltaTime;
+        if (push_timer <= 0)
+        {
+            ExecuteEnemyPush();
+            push_timer = push_timer_reset; // Reset push timer
+        }
 
-        //if the push timer reached 0, spawn the number of the bots in the trench using the logic listed above. invoke a reset of the timer after 10 seconds.
-        
-        //
-
-        
+        // Win condition check (placeholder logic)
+        if (teamA_bot_counter >= teamA_trench_max_capacity)
+        {
+            Debug.Log("Player Lost - Too many enemies in the trench!");
+        }
+        if (teamB_bot_counter == 0 && push_counter > 3)
+        {
+            Debug.Log("Player Won - Enemy forces depleted!");
+        }
     }
+
+    IEnumerator SpawnReinforcements()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(enemy_bot_spawn_rate);
+            if (teamB_bot_counter < teamB_trench_max_capacity)
+            {
+                SpawnEnemyBot();
+            }
+
+            yield return new WaitForSeconds(allied_soldier_spawn_rate);
+            if (teamA_bot_counter < teamA_trench_max_capacity)
+            {
+                SpawnAlliedBot();
+            }
+        }
+    }
+
+    void SpawnEnemyBot()
+    {
+        if (teamB_bot_counter >= teamB_trench_max_capacity) return; // Prevent overfill
+
+        Transform spawnLocation = enemy_spawn_locations[Random.Range(0, enemy_spawn_locations.Length)].transform;
+        GameObject botPrefab = bots[Random.Range(0, bots.Length)];
+        Instantiate(botPrefab, spawnLocation.position, Quaternion.identity);
+        teamB_bot_counter++;
+    }
+
+    void SpawnAlliedBot()
+    {
+        if (teamA_bot_counter >= teamA_trench_max_capacity) return; // Prevent overfill
+
+        // Similar logic to spawn allied bots if needed
+    }
+
+public void ExecuteEnemyPush()
+{
+    Debug.Log("Enemy Push Started!");
+
+    // Get all active enemy bots in the enemy trench
+    GameObject[] enemyBots = GameObject.FindGameObjectsWithTag("Enemy");
+    
+    foreach (GameObject bot in enemyBots)
+    {
+        EnemyAI ai = bot.GetComponent<EnemyAI>();
+        if (ai != null)
+        {
+            ai.SetState(EnemyAI.AIState.Pushing); // Correct way to trigger push
+        }
+    }
+
+    // Scale up push size for the next wave
+    for (int i = 0; i < push_unit_multipliers.Length; i++)
+    {
+        push_unit_multipliers[i] += Random.Range(1, 3); // Increase each type randomly
+    }
+
+    push_counter++;
+}
 }

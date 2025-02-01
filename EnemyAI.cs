@@ -8,7 +8,7 @@ public class EnemyAI : MonoBehaviour
     public enum AIState { Defending, Pushing }
     public AIState currentState = AIState.Defending;
 
-    public Transform player;
+    private Transform player; // Now automatically assigned
     public Transform[] coverPoints;
     public float shootingRange = 20f;
     public float attackRange = 10f;
@@ -25,13 +25,41 @@ public class EnemyAI : MonoBehaviour
     private bool isInCover = false;
 
     private void Start()
+{
+    agent = GetComponent<NavMeshAgent>();
+    timeToShoot = shootingDelay;
+
+    // Find the player automatically
+    GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+    if (playerObj != null)
     {
-        agent = GetComponent<NavMeshAgent>();
-        timeToShoot = shootingDelay;
+        player = playerObj.transform;
     }
+    else
+    {
+        Debug.LogError("EnemyAI: No object with tag 'Player' found in the scene!");
+    }
+
+    // Find all cover points automatically
+    GameObject[] coverObjects = GameObject.FindGameObjectsWithTag("Cover");
+    if (coverObjects.Length > 0)
+    {
+        coverPoints = new Transform[coverObjects.Length];
+        for (int i = 0; i < coverObjects.Length; i++)
+        {
+            coverPoints[i] = coverObjects[i].transform;
+        }
+    }
+    else
+    {
+        Debug.LogError("EnemyAI: No objects with tag 'Cover' found in the scene!");
+    }
+}
 
     private void Update()
     {
+        if (player == null) return; // Ensure the script doesn't run without a player
+        
         switch (currentState)
         {
             case AIState.Defending:
