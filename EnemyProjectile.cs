@@ -14,31 +14,31 @@ public class EnemyProjectile : MonoBehaviour
     private Rigidbody rb;
 
     public void Initialize(Vector3 targetPosition)
+{
+    rb = GetComponent<Rigidbody>();
+    if (rb == null)
     {
-        rb = GetComponent<Rigidbody>();
-        if (rb == null)
-        {
-            Debug.LogError("Rigidbody missing from EnemyProjectile!");
-            return;
-        }
-
-        // Calculate direction toward the target
-        Vector3 shootDirection = (targetPosition - transform.position).normalized;
-
-        // Apply inaccuracy (random offset)
-        shootDirection += new Vector3(
-            Random.Range(-accuracy, accuracy),
-            Random.Range(-accuracy, accuracy),
-            Random.Range(-accuracy, accuracy)
-        );
-
-        shootDirection.Normalize(); // Ensure consistent speed
-
-        // Apply velocity using Rigidbody (THIS IS THE FIX!)
-        rb.velocity = shootDirection * speed;
-
-        Destroy(gameObject, lifetime); // Destroy after set lifetime
+        Debug.LogError("Rigidbody missing from EnemyProjectile!");
+        return;
     }
+
+    // Calculate direction towards the target
+    Vector3 shootDirection = (targetPosition - transform.position).normalized;
+
+    // Apply inaccuracy (random offset)
+    shootDirection += new Vector3(
+        Random.Range(-accuracy, accuracy),
+        Random.Range(-accuracy, accuracy),
+        Random.Range(-accuracy, accuracy)
+    );
+
+    shootDirection.Normalize(); // Ensure consistent speed
+
+    // Apply velocity using Rigidbody (THIS IS THE FIX!)
+    rb.velocity = shootDirection * speed;
+
+    Destroy(gameObject, lifetime); // Destroy after set lifetime
+}
 
     private void OnTriggerEnter(Collider other)
     {

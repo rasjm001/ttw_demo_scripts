@@ -8,7 +8,7 @@ public class EnemyAI : MonoBehaviour
     public enum AIState { Defending, Pushing }
     public AIState currentState = AIState.Defending;
 
-    private Transform player; // Now automatically assigned
+    private Transform player; // Automatically assigned
     public Transform[] coverPoints;
     public float shootingRange = 20f;
     public float attackRange = 10f;
@@ -25,36 +25,36 @@ public class EnemyAI : MonoBehaviour
     private bool isInCover = false;
 
     private void Start()
-{
-    agent = GetComponent<NavMeshAgent>();
-    timeToShoot = shootingDelay;
+    {
+        agent = GetComponent<NavMeshAgent>();
+        timeToShoot = shootingDelay;
 
-    // Find the player automatically
-    GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-    if (playerObj != null)
-    {
-        player = playerObj.transform;
-    }
-    else
-    {
-        Debug.LogError("EnemyAI: No object with tag 'Player' found in the scene!");
-    }
-
-    // Find all cover points automatically
-    GameObject[] coverObjects = GameObject.FindGameObjectsWithTag("Cover");
-    if (coverObjects.Length > 0)
-    {
-        coverPoints = new Transform[coverObjects.Length];
-        for (int i = 0; i < coverObjects.Length; i++)
+        // Find the player automatically
+        GameObject playerObj = GameObject.FindGameObjectWithTag("playerTarget");
+        if (playerObj != null)
         {
-            coverPoints[i] = coverObjects[i].transform;
+            player = playerObj.transform;
+        }
+        else
+        {
+            Debug.LogError("EnemyAI: No object with tag 'playerTarget' found in the scene!");
+        }
+
+        // Find all cover points automatically
+        GameObject[] coverObjects = GameObject.FindGameObjectsWithTag("Cover");
+        if (coverObjects.Length > 0)
+        {
+            coverPoints = new Transform[coverObjects.Length];
+            for (int i = 0; i < coverObjects.Length; i++)
+            {
+                coverPoints[i] = coverObjects[i].transform;
+            }
+        }
+        else
+        {
+            Debug.LogError("EnemyAI: No objects with tag 'Cover' found in the scene!");
         }
     }
-    else
-    {
-        Debug.LogError("EnemyAI: No objects with tag 'Cover' found in the scene!");
-    }
-}
 
     private void Update()
     {
@@ -79,6 +79,7 @@ public class EnemyAI : MonoBehaviour
         
         if (distanceToPlayer <= shootingRange)
         {
+            FacePlayer();
             ShootAtPlayer();
         }
     }
@@ -88,39 +89,58 @@ public class EnemyAI : MonoBehaviour
     {
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-        if (distanceToPlayer <= attackRange)
+        if (distanceToPlayer > attackRange)
         {
             MoveTowardsPlayer();
-
-            if (distanceToPlayer <= shootingRange)
-            {
-                ShootAtPlayer();
-            }
         }
         else
         {
-            SeekCover();
+            // Stop moving and attack
+            agent.ResetPath(); // Stops the enemy from moving
+            FacePlayer();
+            ShootAtPlayer();
         }
     }
 
     private void MoveTowardsPlayer()
     {
-        agent.SetDestination(player.position);
-        agent.speed = movementSpeed;
-        isInCover = false;
+        float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+
+        if (distanceToPlayer > attackRange)
+        {
+            agent.SetDestination(player.position);
+            agent.speed = movementSpeed;
+            isInCover = false;
+        }
+        else
+        {
+            agent.ResetPath(); // Stop moving once within attack range
+        }
+    }
+
+    private void FacePlayer()
+    {
+        if (player == null) return;
+
+        Vector3 direction = (player.position - transform.position).normalized;
+        direction.y = 0; // Keep rotation horizontal
+        transform.forward = direction;
     }
 
     private void ShootAtPlayer()
     {
         if (timeToShoot <= 0)
         {
-            GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
-            Rigidbody rb = bullet.GetComponent<Rigidbody>();
+            // Get the direction towards the player
+            Vector3 direction = (player.position - firePoint.position).normalized;
 
-            if (rb != null)
+            // Instantiate the projectile and initialize it
+            GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
+            EnemyProjectile enemyProjectile = bullet.GetComponent<EnemyProjectile>();
+            
+            if (enemyProjectile != null)
             {
-                Vector3 direction = (player.position - firePoint.position).normalized;
-                rb.velocity = direction * bulletSpeed;
+                enemyProjectile.Initialize(player.position);  // Pass player position to the projectile
             }
 
             timeToShoot = shootingDelay;
@@ -135,6 +155,7 @@ public class EnemyAI : MonoBehaviour
     {
         if (isInCover)
         {
+            FacePlayer();
             ShootAtPlayer();
         }
         else
