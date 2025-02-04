@@ -31,6 +31,9 @@ public class GameManager : MonoBehaviour
     [Header("Game Timer")]
     public float timer = 300f; // Timer to clear level
 
+    [Header("Currency")]
+    public int startingCurrency = 100;
+
     void Start()
     {
         push_timer_reset = push_timer; // Store original push time
