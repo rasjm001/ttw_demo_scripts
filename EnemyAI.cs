@@ -26,8 +26,11 @@ public class EnemyAI : MonoBehaviour
 
     private void Start()
     {
+
         agent = GetComponent<NavMeshAgent>();
         timeToShoot = shootingDelay;
+        agent.autoTraverseOffMeshLink = true;
+
 
         // Find the player automatically
         GameObject playerObj = GameObject.FindGameObjectWithTag("playerTarget");
@@ -70,6 +73,26 @@ public class EnemyAI : MonoBehaviour
                 PushTowardsPlayer();
                 break;
         }
+        IEnumerator ClimbLadder(Vector3 targetPos)
+{
+    agent.enabled = false; // Disable NavMeshAgent
+    Vector3 startPos = transform.position;
+
+    float climbSpeed = 3f;
+    float elapsedTime = 0f;
+    float duration = Vector3.Distance(startPos, targetPos) / climbSpeed;
+
+    while (elapsedTime < duration)
+    {
+        transform.position = Vector3.Lerp(startPos, targetPos, elapsedTime / duration);
+        elapsedTime += Time.deltaTime;
+        yield return null;
+    }
+
+    transform.position = targetPos; // Ensure precise positioning
+    agent.enabled = true;
+    agent.CompleteOffMeshLink();
+}
     }
 
     // ---------------- DEFENDING STATE ----------------

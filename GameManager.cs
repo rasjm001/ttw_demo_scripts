@@ -134,4 +134,9 @@ public void ExecuteEnemyPush()
 
     push_counter++;
 }
+ public void subtractBotB()
+ {
+    teamB_bot_counter -= 1;
+ }
+
 }

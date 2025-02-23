@@ -15,7 +15,7 @@ namespace Akila.FPSFramework
         [Tooltip("The player's starting currency balance")]
         public int startingBalance = 200;
 
-        private int currentBalance;
+        public int currentBalance;
 
         public int CurrentBalance
         {
